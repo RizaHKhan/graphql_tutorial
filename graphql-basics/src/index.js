@@ -16,16 +16,62 @@ const users = [{
     age: 21
 }]
 
+const posts = [{
+    id: '1',
+    title: 'Title 1',
+    body: 'This is the body of post 1',
+    published: true,
+    author: '1',
+    comments: '1'
+}, {
+    id: '2',
+    title: 'Title 2',
+    body: 'This is the body of post 2',
+    published: true,
+    author: '2',
+    comments: '2'
+}, {
+    id: '3',
+    title: 'Title 3',
+    body: 'This is the body of post 3',
+    published: false,
+    author: '1',
+    comments: '1'
+}]
+
+const comments = [{
+    id: '1',
+    text: 'Ths is comment 1',
+    author: '1',
+    post: '1'
+}, {
+    id: '2',
+    text: 'Ths is comment 2',
+    author: '2',
+    post: '2'
+}, {
+    id: '3',
+    text: 'Ths is comment 3',
+    author: '1',
+    post: '3'
+}, {
+    id: '4',
+    text: 'Ths is comment 4',
+    author: '1',
+    post: '3'
+}]
 // Type definitions (schema)
 
 const typeDefs = `
 type Query {
-    users: [User!]!
+    users(query: String): [User!]!
     greeting(name: String, position: String): String!
     me: User!
     post: Post!
     add(numbers: [Float!]!): Float!
     grades: [Int!]!
+    posts(query: String): [Post!]!
+    comments: [Comment!]!
 }
 
 type User {
@@ -33,6 +79,8 @@ type User {
     name: String!
     email: String!
     age: Int
+    posts: [Post!]!
+    comments: [Comment!]!
 }
 
 type Post {
@@ -40,15 +88,76 @@ type Post {
     title: String!
     body: String!
     published: Boolean!
+    author: User!
+    comments: [Comment!]!
+}
+
+type Comment {
+    id: ID!
+    text: String!
+    author: User!
+    post: [Post!]!
 }
 `
 
 // Resolvers //a set of functions
 
 const resolvers = {
+    Post: {
+        author(parent, args, ctx, info) {
+            return users.find((user) => {
+                return user.id === parent.author
+            })
+        },
+        comments(parent, ags, ctx, info) {
+            return comments.find((comment) => {
+                return comment.post === parent.id
+            })
+        }
+    },
+    User: {
+        posts(parent, args, ctx, info) {
+            return posts.filter((post) => {
+                return post.author === parent.id
+            })
+        }
+    },
+    Comment: {
+        author(parent, args, ctx, info) {
+            return users.find((user) => {
+                return user.id === parent.author
+            })
+        },
+        post(parent, args, ctx, info) {
+            return posts.filter((post) => {
+                return post.id === parent.post
+            })
+        }
+    },
     Query: {
+        comments(parent, args, ctx, info) {
+            return comments
+        },
+        posts(parent, args, ctx, info) {
+            if(!args.query) {
+                return posts
+            } else {
+                return posts.filter((post) => {
+                    const isTitleMatch = post.title.toLowerCase().includes(args.query.toLowerCase())
+                    const isBodyMatch = post.body.toLowerCase().includes(args.query.toLowerCase())
+
+                    return isTitleMatch || isBodyMatch
+                })
+            }
+        },
         users(parent, args, ctx, info) {
-            return  users
+            if(!args.query) {
+                return users
+            } else {
+                return users.filter((user) => {
+                    return user.name.toLowerCase().includes(args.query.toLowerCase())
+                })
+            }
         },
         add(parent, args, ctx, info) {
             if(args.numbers.length === 0) {
@@ -75,6 +184,7 @@ const resolvers = {
                 published: true
             }
         },
+        
 
         // four arugments get passed all resolver functions
         // parent, args, ctx, info 
