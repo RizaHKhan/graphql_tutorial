@@ -110,7 +110,7 @@ const resolvers = {
             })
         },
         comments(parent, ags, ctx, info) {
-            return comments.find((comment) => {
+            return comments.filter((comment) => {
                 return comment.post === parent.id
             })
         }
